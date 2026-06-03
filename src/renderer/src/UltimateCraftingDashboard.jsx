@@ -155,6 +155,102 @@ const globalStyle = `
   .ocr-actions-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
   .btn-secondary { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
   .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+
+  /* Custom Modal Styling with Auto-Scaling */
+  @keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes modalScaleUp {
+    from { transform: scale(0.9) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(2, 6, 23, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: modalFadeIn 0.2s ease-out forwards;
+  }
+  .custom-modal-content {
+    background: rgba(9, 13, 22, 0.95);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(99, 102, 241, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    width: 90%;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: modalScaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: #e2e8f0;
+  }
+  .custom-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 12px;
+  }
+  .custom-modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .custom-modal-body {
+    font-size: 14.5px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+  .custom-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  .btn-modal-primary {
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  }
+  .btn-modal-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+  }
+  .btn-modal-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  }
+  .btn-modal-danger:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+  }
 `
 
 const defaultData = [
@@ -268,6 +364,37 @@ const SVGWave = () => (
   </svg>
 )
 
+const formatNumberWithCommas = (value) => {
+  if (value === undefined || value === null || value === '') return ''
+
+  // Convert to string and strip non-digit/decimal characters
+  let str = value.toString().replace(/[^0-9.]/g, '')
+
+  // Handle multiple decimal points (keep only the first one)
+  const parts = str.split('.')
+  if (parts.length > 2) {
+    str = parts[0] + '.' + parts.slice(1).join('')
+  }
+
+  // Re-split to format the integer part
+  const cleanParts = str.split('.')
+  cleanParts[0] = cleanParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+
+  // If there's a decimal point, join with it
+  if (str.includes('.')) {
+    return cleanParts[0] + '.' + (cleanParts[1] || '')
+  }
+  return cleanParts[0]
+}
+
+const formatDisplayNumber = (value, decimals = 2) => {
+  if (value === undefined || value === null || isNaN(Number(value))) return '0.00'
+  return Number(value).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  })
+}
+
 export default function UltimateCraftingDashboard() {
   const [cities, setCities] = useState([])
   const [isLoaded, setIsLoaded] = useState(false)
@@ -283,6 +410,38 @@ export default function UltimateCraftingDashboard() {
 
   const [isSaving, setIsSaving] = useState(false)
   const pendingSaveRef = useRef(null)
+
+  const [customModal, setCustomModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'alert',
+    onConfirm: null
+  })
+
+  const showAlert = (title, message) => {
+    setCustomModal({
+      isOpen: true,
+      title,
+      message,
+      type: 'alert',
+      onConfirm: null
+    })
+  }
+
+  const showConfirm = (title, message, onConfirm) => {
+    setCustomModal({
+      isOpen: true,
+      title,
+      message,
+      type: 'confirm',
+      onConfirm
+    })
+  }
+
+  const closeModal = () => {
+    setCustomModal((prev) => ({ ...prev, isOpen: false }))
+  }
 
   // 1. ดึงและฟังการอัปเดตข้อมูลแบบ Real-time จาก Supabase
   useEffect(() => {
@@ -373,16 +532,16 @@ export default function UltimateCraftingDashboard() {
     const saved = localStorage.getItem('craftingProData') // ดึงข้อมูลที่เคยเซฟไว้ในเครื่อง
     if (saved) {
       const localData = JSON.parse(saved)
-      if (
-        window.confirm(
-          'พบข้อมูลเก่าในเครื่องนี้! ต้องการอัปโหลดขึ้น Cloud เพื่อทับข้อมูลปัจจุบันและแชร์กับทุกคนไหม?'
-        )
-      ) {
-        saveImmediately(localData)
-        alert('✅ ดึงข้อมูลเก่าขึ้น Cloud สำเร็จแล้ว!')
-      }
+      showConfirm(
+        'พบข้อมูลเก่าในเครื่องนี้',
+        'ต้องการอัปโหลดขึ้น Cloud เพื่อทับข้อมูลปัจจุบันและแชร์กับทุกคนไหม?',
+        () => {
+          saveImmediately(localData)
+          showAlert('สำเร็จ', '✅ ดึงข้อมูลเก่าขึ้น Cloud สำเร็จแล้ว!')
+        }
+      )
     } else {
-      alert('❌ ไม่พบข้อมูลเก่าที่บันทึกไว้ในเครื่องนี้')
+      showAlert('แจ้งเตือน', '❌ ไม่พบข้อมูลเก่าที่บันทึกไว้ในเครื่องนี้')
     }
   }
 
@@ -427,11 +586,15 @@ export default function UltimateCraftingDashboard() {
 
   const handleDeleteCity = (id, e) => {
     e.stopPropagation()
-    if (window.confirm('ยืนยันการลบ?')) {
-      const newCities = cities.filter((c) => c.id !== id)
-      saveImmediately(newCities)
-      if (activeCityId === id && newCities.length > 0) setActiveCityId(newCities[0].id)
-    }
+    showConfirm(
+      'ยืนยันการลบเซิร์ฟเวอร์',
+      'คุณแน่ใจหรือไม่ว่าต้องการลบเซิร์ฟเวอร์นี้? ข้อมูลทั้งหมดจะไม่สามารถกู้คืนได้',
+      () => {
+        const newCities = cities.filter((c) => c.id !== id)
+        saveImmediately(newCities)
+        if (activeCityId === id && newCities.length > 0) setActiveCityId(newCities[0].id)
+      }
+    )
   }
 
   const saveEditCity = (id) => {
@@ -683,10 +846,13 @@ export default function UltimateCraftingDashboard() {
                 <div className="input-prefix-container">
                   <span className="input-prefix-icon">฿</span>
                   <input
-                    type="number"
+                    type="text"
                     className="pro-input-field"
-                    value={activeCity?.igRate}
-                    onChange={(e) => updateCity((c) => ({ ...c, igRate: Number(e.target.value) }))}
+                    value={formatNumberWithCommas(activeCity?.igRate)}
+                    onChange={(e) => {
+                      const cleanVal = e.target.value.replace(/,/g, '')
+                      updateCity((c) => ({ ...c, igRate: cleanVal === '' ? 0 : Number(cleanVal) }))
+                    }}
                   />
                 </div>
                 <div className="stat-card-desc">ราคากลางในเซิร์ฟเวอร์</div>
@@ -698,12 +864,16 @@ export default function UltimateCraftingDashboard() {
                 <div className="input-prefix-container">
                   <span className="input-prefix-icon">$</span>
                   <input
-                    type="number"
+                    type="text"
                     className="pro-input-field"
-                    value={activeCity?.bmToCash}
-                    onChange={(e) =>
-                      updateCity((c) => ({ ...c, bmToCash: Number(e.target.value) }))
-                    }
+                    value={formatNumberWithCommas(activeCity?.bmToCash)}
+                    onChange={(e) => {
+                      const cleanVal = e.target.value.replace(/,/g, '')
+                      updateCity((c) => ({
+                        ...c,
+                        bmToCash: cleanVal === '' ? 0 : Number(cleanVal)
+                      }))
+                    }}
                   />
                 </div>
                 <div className="stat-card-desc">ราคากลางในเซิร์ฟเวอร์</div>
@@ -714,18 +884,18 @@ export default function UltimateCraftingDashboard() {
                 <div className="stat-card-title conversion-card-title">แปลงเงิน</div>
                 <div className="conversion-inputs-row">
                   <input
-                    type="number"
+                    type="text"
                     className="conversion-input-box"
-                    value={calcTHB}
-                    onChange={(e) => handleTHBChange(e.target.value)}
+                    value={formatNumberWithCommas(calcTHB)}
+                    onChange={(e) => handleTHBChange(e.target.value.replace(/,/g, ''))}
                     placeholder="บาท"
                   />
                   <span className="conversion-equals">=</span>
                   <input
-                    type="number"
+                    type="text"
                     className="conversion-input-box"
-                    value={calcIG}
-                    onChange={(e) => handleIGChange(e.target.value)}
+                    value={formatNumberWithCommas(calcIG)}
+                    onChange={(e) => handleIGChange(e.target.value.replace(/,/g, ''))}
                     placeholder="IG"
                   />
                   <button
@@ -809,17 +979,20 @@ export default function UltimateCraftingDashboard() {
                           </td>
                           <td style={{ width: '15%', textAlign: 'center' }}>
                             <input
-                              type="number"
+                              type="text"
                               className="table-input-cost"
-                              value={mat.cost}
-                              onChange={(e) =>
+                              value={formatNumberWithCommas(mat.cost)}
+                              onChange={(e) => {
+                                const cleanVal = e.target.value.replace(/,/g, '')
                                 updateCity((c) => ({
                                   ...c,
                                   materials: c.materials.map((m) =>
-                                    m.id === mat.id ? { ...m, cost: Number(e.target.value) } : m
+                                    m.id === mat.id
+                                      ? { ...m, cost: cleanVal === '' ? 0 : Number(cleanVal) }
+                                      : m
                                   )
                                 }))
-                              }
+                              }}
                             />
                           </td>
                           <td style={{ width: '28%' }}>
@@ -843,7 +1016,7 @@ export default function UltimateCraftingDashboard() {
                             </select>
                           </td>
                           <td style={{ width: '14%' }} className="table-price-thb">
-                            {getMaterialThb(mat).toFixed(2)}
+                            {formatDisplayNumber(getMaterialThb(mat), 2)}
                           </td>
                           <td style={{ width: '5%', textAlign: 'center' }}>
                             <button
@@ -884,10 +1057,12 @@ export default function UltimateCraftingDashboard() {
                               <div className="recipe-card-header">
                                 <div className="recipe-title-group">
                                   <span className="recipe-name">{recipe.name}</span>
-                                  <span className="recipe-chance-badge">{recipe.chance}%</span>
+                                  <span className="recipe-chance-badge">
+                                    {formatNumberWithCommas(recipe.chance)}%
+                                  </span>
                                 </div>
                                 <div className="recipe-total-price">
-                                  {getRecipeTotal(recipe).toFixed(2)}{' '}
+                                  {formatDisplayNumber(getRecipeTotal(recipe), 2)}{' '}
                                   <span style={{ fontSize: '14px', marginLeft: '4px' }}>฿</span>
                                 </div>
                               </div>
@@ -896,7 +1071,7 @@ export default function UltimateCraftingDashboard() {
                                   const mat = activeCity.materials.find((m) => m.id === ing.matId)
                                   return (
                                     <span key={idx} className="ingredient-badge">
-                                      {mat?.name} x{ing.qty}
+                                      {mat?.name} x{formatNumberWithCommas(ing.qty)}
                                     </span>
                                   )
                                 })}
@@ -924,7 +1099,7 @@ export default function UltimateCraftingDashboard() {
                                   }
                                 />
                                 <input
-                                  type="number"
+                                  type="text"
                                   className="pro-input-field"
                                   style={{
                                     width: '80px',
@@ -934,17 +1109,18 @@ export default function UltimateCraftingDashboard() {
                                     height: '36px',
                                     textAlign: 'center'
                                   }}
-                                  value={recipe.chance}
-                                  onChange={(e) =>
+                                  value={formatNumberWithCommas(recipe.chance)}
+                                  onChange={(e) => {
+                                    const cleanVal = e.target.value.replace(/,/g, '')
                                     updateCity((c) => ({
                                       ...c,
                                       recipes: c.recipes.map((r) =>
                                         r.id === recipe.id
-                                          ? { ...r, chance: Number(e.target.value) }
+                                          ? { ...r, chance: cleanVal === '' ? 0 : Number(cleanVal) }
                                           : r
                                       )
                                     }))
-                                  }
+                                  }}
                                   placeholder="%"
                                 />
                                 <button
@@ -993,7 +1169,7 @@ export default function UltimateCraftingDashboard() {
                                     ))}
                                   </select>
                                   <input
-                                    type="number"
+                                    type="text"
                                     className="pro-input-field"
                                     style={{
                                       width: '80px',
@@ -1003,7 +1179,7 @@ export default function UltimateCraftingDashboard() {
                                       height: '32px',
                                       textAlign: 'center'
                                     }}
-                                    value={ing.qty}
+                                    value={formatNumberWithCommas(ing.qty)}
                                     onChange={(e) =>
                                       updateCity((c) => ({
                                         ...c,
@@ -1013,7 +1189,15 @@ export default function UltimateCraftingDashboard() {
                                                 ...r,
                                                 ingredients: r.ingredients.map((i, iIdx) =>
                                                   iIdx === idx
-                                                    ? { ...i, qty: Number(e.target.value) }
+                                                    ? {
+                                                        ...i,
+                                                        qty:
+                                                          e.target.value === ''
+                                                            ? 0
+                                                            : Number(
+                                                                e.target.value.replace(/,/g, '')
+                                                              )
+                                                      }
                                                     : i
                                                 )
                                               }
@@ -1130,6 +1314,50 @@ export default function UltimateCraftingDashboard() {
           </div>
         </div>
       </div>
+
+      {customModal.isOpen && (
+        <div className="custom-modal-overlay" onClick={closeModal}>
+          <div className="custom-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="custom-modal-header">
+              <span style={{ fontSize: '20px' }}>
+                {customModal.type === 'confirm' ? '❓' : '🔔'}
+              </span>
+              <h4 className="custom-modal-title" style={{ margin: 0 }}>
+                {customModal.title}
+              </h4>
+            </div>
+            <div className="custom-modal-body">{customModal.message}</div>
+            <div className="custom-modal-footer">
+              {customModal.type === 'confirm' ? (
+                <>
+                  <button
+                    className="btn-secondary"
+                    style={{ padding: '8px 16px', fontSize: '13px' }}
+                    onClick={closeModal}
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    className={
+                      customModal.title.includes('ลบ') ? 'btn-modal-danger' : 'btn-modal-primary'
+                    }
+                    onClick={() => {
+                      if (customModal.onConfirm) customModal.onConfirm()
+                      closeModal()
+                    }}
+                  >
+                    ยืนยัน
+                  </button>
+                </>
+              ) : (
+                <button className="btn-modal-primary" onClick={closeModal}>
+                  ตกลง
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
