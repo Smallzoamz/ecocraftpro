@@ -395,6 +395,11 @@ const formatDisplayNumber = (value, decimals = 2) => {
   })
 }
 
+const getInputWidth = (value, minWidth = 50, charWidth = 8.2, padding = 20) => {
+  const len = value ? value.toString().length : 0
+  return `${Math.max(minWidth, len * charWidth + padding)}px`
+}
+
 export default function UltimateCraftingDashboard() {
   const [cities, setCities] = useState([])
   const [isLoaded, setIsLoaded] = useState(false)
@@ -966,6 +971,7 @@ export default function UltimateCraftingDashboard() {
                           <td style={{ width: '38%' }}>
                             <input
                               className="table-input-name"
+                              style={{ width: getInputWidth(mat.name, 120, 8.5, 16) }}
                               value={mat.name}
                               onChange={(e) =>
                                 updateCity((c) => ({
@@ -981,6 +987,9 @@ export default function UltimateCraftingDashboard() {
                             <input
                               type="text"
                               className="table-input-cost"
+                              style={{
+                                width: getInputWidth(formatNumberWithCommas(mat.cost), 55, 8.2, 16)
+                              }}
                               value={formatNumberWithCommas(mat.cost)}
                               onChange={(e) => {
                                 const cleanVal = e.target.value.replace(/,/g, '')
@@ -1102,7 +1111,12 @@ export default function UltimateCraftingDashboard() {
                                   type="text"
                                   className="pro-input-field"
                                   style={{
-                                    width: '80px',
+                                    width: getInputWidth(
+                                      formatNumberWithCommas(recipe.chance),
+                                      60,
+                                      8.2,
+                                      24
+                                    ),
                                     background: 'rgba(0,0,0,0.3)',
                                     border: '1px solid #1e293b',
                                     borderRadius: '8px',
@@ -1172,7 +1186,12 @@ export default function UltimateCraftingDashboard() {
                                     type="text"
                                     className="pro-input-field"
                                     style={{
-                                      width: '80px',
+                                      width: getInputWidth(
+                                        formatNumberWithCommas(ing.qty),
+                                        60,
+                                        8.2,
+                                        20
+                                      ),
                                       background: 'rgba(0,0,0,0.3)',
                                       border: '1px solid #1e293b',
                                       borderRadius: '8px',
